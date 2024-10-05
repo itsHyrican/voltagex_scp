@@ -8,7 +8,31 @@ if (!isset($_SESSION['authenticated'])) {
     exit();
 }
 
-// Authentifiziert, zeige den Inhalt der Seite
+// Laden und Speichern der .service-Datei
+$serviceFilePath = '';
+$serviceContent = '';
+$message = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['service_file'])) {
+    $serviceFilePath = '/etc/systemd/system' . basename($_POST['service_file']); // Pfad zur .service-Datei
+    if (isset($_POST['service_content'])) {
+        // Speichert den neuen Inhalt in der .service-Datei
+        file_put_contents($serviceFilePath, $_POST['service_content']);
+        
+        // Führe systemctl-Befehle im Hintergrund aus
+        $serviceName = escapeshellarg(basename($_POST['service_file'], '.service'));
+        exec('sudo systemctl daemon-reload > /dev/null 2>&1 &');
+        exec('sudo systemctl restart ' . $serviceName . ' > /dev/null 2>&1 &');
+
+        // Erfolgsmeldung
+        $message = "Änderungen erfolgreich gespeichert. Service wird im Hintergrund neu gestartet.";
+    }
+
+    // Lädt den Inhalt der ausgewählten .service-Datei
+    if (file_exists($serviceFilePath)) {
+        $serviceContent = file_get_contents($serviceFilePath);
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -170,6 +194,9 @@ if (!isset($_SESSION['authenticated'])) {
                                     Stoppen
                                 </button>
                             </form>
+                            <button class="bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700 transition-all" onclick="openModal('ark-center.service')">
+                                Mods
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -198,6 +225,9 @@ if (!isset($_SESSION['authenticated'])) {
                                     Stoppen
                                 </button>
                             </form>
+                            <button class="bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700 transition-all " onclick="openModal('ark-center.service')">
+                                Mods
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -226,6 +256,9 @@ if (!isset($_SESSION['authenticated'])) {
                                     Stoppen
                                 </button>
                             </form>
+                            <button class="bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700 transition-all" onclick="openModal('ark-center.service')">
+                                Mods
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -256,6 +289,9 @@ if (!isset($_SESSION['authenticated'])) {
                                     Stoppen
                                 </button>
                             </form>
+                            <button class="bg-blue-600 text-white py-2 px-5 rounded-lg hover:bg-blue-700 transition-all" onclick="openModal('ark-center.service')">
+                                Mods
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -397,6 +433,57 @@ if (!isset($_SESSION['authenticated'])) {
                     </div>
                 </div>
             </div>
+            <div class="mb-3">
+                <div class="card h-full bg-white shadow-md rounded-lg overflow-hidden dark:bg-dark-server">
+                    <img class="w-full h-52 object-cover object-top" src="/assets/scp/sdtd.jpg"
+                        alt="Satisfactory" />
+                    <div class="card-body flex flex-col items-center p-3">
+                        <h5 class="text-md font-bold">7 Days To Die</h5>
+                        <p class="text-red-500 font-bold" data-server-id="sdtd">offline</p>
+                        <div class="mt-2 flex justify-center space-x-5">
+                            <form method="post" action="scp_script.php" class="server-action">
+                                <input type="hidden" name="action" value="start" />
+                                <input type="hidden" name="service" value="sdtd" />
+                                <button type="submit"
+                                    class="bg-green-600 text-white py-2 px-5 rounded-lg hover:bg-green-700 transition-all">
+                                    Starten
+                                </button>
+                            </form>
+                            <form method="post" action="scp_script.php" class="server-action">
+                                <input type="hidden" name="action" value="stop" />
+                                <input type="hidden" name="service" value="sdtd" />
+                                <button type="submit"
+                                    class="bg-red-600 text-white py-2 px-5 rounded-lg hover:bg-red-700 transition-all">
+                                    Stoppen
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- Erfolgsmeldung anzeigen, falls vorhanden -->
+    <?php if ($message): ?>
+            <div id="successMessage" class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded shadow hidden">
+                <?php echo htmlspecialchars($message); ?>
+            </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Modal -->
+    <div id="serviceModal" class="fixed inset-0 flex items-center justify-center bg-gray-900 bg-opacity-50 hidden">
+        <div class="bg-white rounded-lg shadow-lg max-w-4xl w-full h-[80vh] p-6 overflow-hidden flex flex-col dark:bg-dark-server">
+            <h2 class="text-xl font-bold mb-4">Service-Datei bearbeiten</h2>
+            <form method="post" action="" class="h-full flex flex-col ">
+                <input type="hidden" name="service_file" id="serviceFileInput">
+                <textarea id="serviceContent" name="service_content" class="w-full h-[70vh] p-2 border border-gray-300 rounded mb-4 resize-none dark:bg-dark-items" ></textarea>
+                <div class="flex justify-end space-x-3">
+                    <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">Speichern</button>
+                    <button type="button" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition" onclick="closeModal()">Abbrechen</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -471,6 +558,36 @@ if (!isset($_SESSION['authenticated'])) {
         });
     </script>
 
+<script>
+    // Öffnen des Modals und Laden der entsprechenden .service-Datei
+    function openModal(serviceFile) {
+        document.getElementById('serviceModal').classList.remove('hidden');
+        document.getElementById('serviceFileInput').value = serviceFile;
+
+        // AJAX-Anfrage, um die aktuelle .service-Datei zu laden
+        fetch('load_service.php?service_file=' + encodeURIComponent(serviceFile))
+            .then(response => response.text())
+            .then(data => {
+                document.getElementById('serviceContent').value = data;
+            });
+    }
+
+    // Schließen des Modals
+    function closeModal() {
+        document.getElementById('serviceModal').classList.add('hidden');
+    }
+
+    // Erfolgsmeldung automatisch ausblenden
+    document.addEventListener('DOMContentLoaded', function () {
+        const successMessage = document.getElementById('successMessage');
+        if (successMessage) {
+            setTimeout(() => {
+                successMessage.classList.add('hidden');
+            }, 3000); // 3000 ms = 3 Sekunden
+        }
+    });
+</script>
+    
     <script>
         const toggleButton = document.getElementById("theme-toggle");
         const htmlElement = document.documentElement;

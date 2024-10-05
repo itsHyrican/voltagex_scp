@@ -8,7 +8,8 @@ $servers = [
     'enshrouded' => 'enshrouded.service',
     'palworld' => 'palworld.service',
     'satisfactory' => 'satisfactory.service',
-    'valheim' => 'valheim.service'
+    'valheim' => 'valheim.service',
+    'sdtd' => 'sdtd.service'
 ];
 
 $statuses = [];

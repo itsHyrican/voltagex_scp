@@ -723,6 +723,10 @@ video {
   height: 2rem;
 }
 
+.h-\[70vh\] {
+  height: 70vh;
+}
+
 .h-\[80vh\] {
   height: 80vh;
 }
@@ -769,10 +773,6 @@ video {
 
 .max-w-md {
   max-width: 28rem;
-}
-
-.flex-grow {
-  flex-grow: 1;
 }
 
 .-skew-x-12 {
